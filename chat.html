@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<script src="https://cdn.firebase.com/js/client/2.2.1/firebase.js" integrity="sha384-zAlH3FrzsxdG1VfzWcyO9+PqCx5mQkLQPjgtp7jukmrbywGDj5nCivAb4j9ddOFu" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.slim.js" integrity="sha256-DrT5NfxfbHvMHux31Lkhxg42LY6of8TaYyK50jnxRnM=" crossorigin="anonymous"></script>
+    	<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js" integrity="sha256-6rXZCnFzbyZ685/fMsqoxxZz/QZwMnmwHg+SsNe+C/w=" crossorigin="anonymous"></script>		  
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap-theme.min.css" integrity="sha256-8uHMIn1ru0GS5KO+zf7Zccf8Uw12IA5DrdEcmMuWLFM=" crossorigin="anonymous" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.0.2/styles/tomorrow-night.min.css" integrity="sha256-j9z54bBKr1YuuulDV9S89E6WbTjElOrGGWyJy3N0xS8=" crossorigin="anonymous" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.0.2/highlight.min.js" integrity="sha256-xBWd+VDTBasaTja2bfaCX4aA2H18UxRsjRFkK3rgfkI=" crossorigin="anonymous"></script>
+		<style>
+		/*@import "https://fonts.googleapis.com/css?family=Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400";*/
+			body { 
+				background: black;
+				font-family: Arial,sans-serif;
+				font-weight: normal;
+				font-size: 1.6em;
+				line-height: 1.6;
+				margin-bottom: 0.75em;
+				text-rendering: optimizelegibility;
+			 }
+			.container-fluid {
+				padding-right: 0px;
+				padding-left: 0px;
+				margin-right: auto;
+				margin-left: auto;
+			}
+			#secureIcon	{
+				position:fixed;
+				top: 5px;
+				right: 25px;		
+			}
+			.row {
+				color: gray;
+				width: 95%;
+				margin: auto;
+				background: #303030;				
+			}
+			#inputs-container {
+				position: fixed;
+				bottom: 0px;
+				width: 100%;
+				background: black;
+				overflow: hidden;
+				min-height: 100px;
+			}
+			#inputs { padding: 0.4em; }
+			#messages {
+				position: fixed;
+				top: 0px;
+				width: 100%;
+				height: 100%;
+				overflow: auto; 
+				padding-bottom:132px;
+			}
+			.msg pre { margin-top:5px; padding:0; }
+			.msg.row.same {	border-radius: 0; }
+			.msg.row.alternate { background: #121212; }
+			.msg.row.alternate.same { border-radius: 0; }
+			.msg { padding-left: 0.2em;	}
+			.msg.new { margin-top: 0.2em; }
+			.msg.enc { border-right: 1px solid green; }
+			.msg.new .nickname {
+				width: auto;
+				float: right;
+			}
+			.msg.same .nickname { display:none; }
+			.msg .nickname { display: inline-block; }
+			.msg .msgBody {
+				color: #e6e1dc;
+				padding-left: 0.2em;
+				display: inline-block;
+			}
+			.msg code.snip
+			{
+				background:#969696;
+				color:#126528;			
+			}
+			.msg .msgBody img
+			{
+				max-height:300px;
+				width:auto;
+				border: 1px solid black;	
+				margin: 5px;				
+			}
+			.msg .time {
+				color:#637763;
+				font-size: 10px;
+				margin:0;
+			}
+			.col-md-1 { width: auto; }
+			img {
+				padding: 0 0 0 0;
+				max-width: 100%;
+				max-height: 100%;
+			}
+			@-moz-document url-prefix() {
+			img { width: 100%; height: 100%; }
+			}
+			input, button, select, textarea {
+				border-radius: 0.2em;
+				background: #cdc7c7;
+			}
+			button { margin-top: 0.2em; }
+			#inputs input { margin-bottom: 0.4em; }
+			#inputs textarea { min-width: 10em; width: 100%; height:82px; }
+			#messages .alternate .msgBody { background: #121212; }
+			#options span { color:gray;}
+			#optionsToggle {right: 15px; position:fixed; color:white; cursor: pointer;}
+			#send { font-size:10px;margin:0; border:0; line-height:12px; }
+			hr { margin: 3px; }
+		</style>
+		<title>Chat</title></head>
+	</head>
+  <body>
+    <div class="container-fluid">	
+    <div id="messages"></div>
+	<div id="inputs-container">
+	<div id="inputs">		
+	<div id="options" style="display: none">	
+		<input value="" id="nameInput" placeholder="Name" type="text">
+		<span id="notificationsConfig">
+		<input value="" type="password" id="passwordInput" placeholder="Encryption password">	
+		<button id="persistPass" title="Persist encryption key to survive refresh">#</button>
+		<input type="checkbox" id="enableEncryption"> <label> Enable encryption </label>
+		<input type="checkbox" id="enableNotifications"> <label> Enable notifications </label>
+	</div>
+	<div id = "msgInput">
+		<div id="optionsToggle" title="Toggle options">🔨</div>
+		<textarea id="messageInput" placeholder="Message" type="text"></textarea>
+		<button id="send">Send</button>
+	</div>
+	</div>
+	</div>
+	
+	</div>
+	<script>
+	/* ---------------------- CONFIGURATION ------------------------*/
+	var databaseUrl = 'https://antano-chatas.firebaseio.com/';
+	var messagesLimit = 147; //how many messages to show
+	var pbkdf2Iterrations = 447; //password stretching strength. Bigger number puts more load on client;	
+	var notificationsEnabled = true; //enables or disables desktop notifications globally
+	var passwordSalt = 'ba1cba00555d77ab'; //change this to something random
+
+	/* ------------------ END OF CONFIGURATION ---------------------*/
+	
+	
+	var fb = new Firebase(databaseUrl);
+	fbQuery = fb.endAt().limitToLast(messagesLimit);
+	var lastName = "";
+	var notifyEnabled = false;		
+	passwordSalt = CryptoJS.enc.Hex.parse(passwordSalt);
+	var iv = CryptoJS.enc.Hex.parse('ca123400777d00cd'); //IV should be random for each message, but it is currently not implemented
+	var password;	
+	var encrypt = false;
+
+	/******** UNREAD MESSAGE NOTIFICATION *********/
+	var unreadMsgCount = 0;
+	var hidden, visibilityChange; 
+	var title = "Chat";  
+	document.title = title;
+	/**********************************************/
+
+	$(function(){
+	
+		$("#enableEncryption").prop('checked', false);
+		$('#nameInput').val(localStorage.getItem("nickname"));
+		notifyEnabled = JSON.parse(localStorage.getItem("enableNotifications"));
+		$('#enableNotifications').prop('checked', notifyEnabled);
+	
+		fbAttach();
+		/******** UNREAD MESSAGE NOTIFICATION *********/
+		setupVisibilityProps();
+		/**********************************************/
+		if (window.location.hash)
+		{
+			$("#enableEncryption").prop('checked', true);
+			enableEncryption();
+		}
+	});
+	$('#enableNotifications').change(function(){localStorage.setItem("enableNotifications", $(this).prop('checked'));});
+	$('#nameInput').change(function(){localStorage.setItem("nickname", $(this).val());});
+	$('#passwordInput').change(function(){$("#enableEncryption").prop('checked', false);});
+	$('#send').click(function(){send();});
+	$('#persistPass').click(function(){
+	  		window.location.hash = password.substring(password.length/2);
+			localStorage.setItem("p", password.substring(0,password.length/2))
+	})
+	$("#optionsToggle").click(function() {
+	  $("#options").toggle( "fast" );
+	});
+	$("#enableEncryption").change(function() {
+			if(this.checked) {
+				enableEncryption();
+			} else
+			{
+				encrypt = false;
+				$("#secureIcon").hide(1000);
+			}
+	});
+
+	$('#messageInput').keydown(function (e) {
+	if (e.keyCode == 13 && e.ctrlKey) {			
+			//return true;
+			$('#messageInput').val($('#messageInput').val() + "\n");
+	}});
+	$('#messageInput').keypress(function (e) {
+	if (e.keyCode == 13 && !e.ctrlKey) {
+			send();
+			return false;
+	}});
+	function enableEncryption()
+	{
+				userpass = $('#passwordInput').val();
+				locpass = localStorage.getItem("p");
+				if (window.location.hash && locpass && !userpass)
+				{
+					password = locpass + window.location.hash.substring(1);
+				}
+				else
+				{
+					password = CryptoJS.PBKDF2(userpass, passwordSalt, { keySize: 256/32, iterations: 447 }).toString();
+				}
+				$("#secureIcon").show(2200);
+				fb.off();
+				$('#messages').html('');				
+				encrypt = true;
+				fbAttach();
+	}
+	function fbAttach()
+	{
+		notifyEnabled = false;
+		setTimeout(function(){notifyEnabled=true;},17000);
+		fbQuery.on('child_added', function (snapshot) {
+			var message = snapshot.val();
+			if (message.ct) //encrypted
+			{
+				try {				
+					msgIV = CryptoJS.enc.Hex.parse(message.iv || 'ca123400777d00cd');
+					var decrypted = CryptoJS.AES.decrypt(message.ct, CryptoJS.enc.Hex.parse(password),{ iv:msgIV }); 
+					message.text = decrypted.toString(CryptoJS.enc.Utf8);
+				} catch (err) {console.log(err);}
+				if (!message.text)
+					message.text = "Decryption failed";
+			}
+			displayChatMessage(message.name, message.text, message._at, message.ct);
+			/******** UNREAD MESSAGE NOTIFICATION *********/		
+			notifyAboutUnread(snapshot);
+			/**********************************************/		
+			if (notifyEnabled)
+				notify(message.name, message.text);
+			lastName = message.name;
+		});
+	}
+
+
+	function send()
+	{
+		var name = $('#nameInput').val();			
+		var text = $('#messageInput').val();	
+		if (!text)
+			return;
+		if (encrypt)
+		{
+			var encrypted = CryptoJS.AES.encrypt(text, CryptoJS.enc.Hex.parse(password),{ iv: CryptoJS.lib.WordArray.random(32)});				
+			fb.push({name: name, text: "This message is encrypted", ct: encrypted.toString(), _at: new Date().toISOString(), iv: encrypted.iv.toString() });
+		}
+		else
+		{
+			fb.push({name : name, text : text, _at: new Date().toISOString()});
+		}
+		$('#messageInput').val('');
+	}
+	function displayChatMessage(name, text, time, encrypted) {
+		var localTimeString = new Date(Date.parse(time)||time).toLocaleString("lt");
+		var altClass="";
+		var sameNickClass = "new"
+		var encryptedClass = "enc";
+		if (!encrypted)
+			encryptedClass = "";
+		if ($('#nameInput').val() != name)
+			altClass = "alternate";
+		if (lastName == name)
+			sameNickClass = "same";
+		text = formatText(text);
+		var body  = $("<div class='msgBody col-md-11' />").html(text).append($('<p class="time" />').text(localTimeString));
+		var textDiv= $('<div class="msg row '+altClass+' '+sameNickClass+' '+encryptedClass+'" />').html(body);
+		textDiv = textDiv.prepend($('<div class="nickname col-md-1" />').text(name));
+		
+		body[0].querySelectorAll('pre code').forEach((block) => {
+			hljs.highlightBlock(block);
+		});			
+		textDiv.appendTo($('#messages'));
+		$('#messages')[0].scrollTop = $('#messages')[0].scrollHeight;
+	};
+
+	function formatText(txt)
+	{
+	    //console.log(txt);
+		if (txt.startsWith("`")) { //pre
+			txt = txt.replace("`","");
+			txt = txt.replace(/^\s+|\s+$/g, ''); //trim start
+			return "<pre><code>"+txt+"</code></pre>";
+		}
+		var codeExp = /`(.+?)`/i;
+		if (txt.search(codeExp) >= 0)
+		{
+			console.log(txt);
+			return txt.replace(codeExp, '<code class="snip">$1</code>'); 
+		}
+		var imgExp = /(\b(https?):.+?\.(jpg|gif|png|svg|jpeg))/i;
+		var linkExp = /(\b(https?):[^ ]+)/i;
+		txt = txt.split("\n").join("<br />");
+		if (txt.search(imgExp) >= 0)
+		{
+			return txt.replace(imgExp, '<a href="$1" target="_blank"><img src="$1" /></a>'); 
+		}
+		txt = txt.replace(linkExp, '<a href="$1" target="_blank">$1</a>'); 
+		return txt;
+
+	}
+	
+	function notify(name, txt) {
+		if (name == $('#nameInput').val())
+			return;
+		if (!("Notification" in window)) {
+			alert("This browser does not support desktop notification");
+		} else if (Notification.permission === "granted") {
+			var notification = new Notification(txt);
+		} else if (Notification.permission !== 'denied') {
+			Notification.requestPermission(function (permission) {
+				if (permission === "granted") {
+					var notification = new Notification(txt);
+				}
+			});
+		}
+	}
+	  
+	/******** UNREAD MESSAGE NOTIFICATION *********/
+	function setupVisibilityProps(){
+		if (typeof document.hidden !== "undefined") { 
+		  hidden = "hidden";
+		  visibilityChange = "visibilitychange";
+		} else if (typeof document.mozHidden !== "undefined") {
+		  hidden = "mozHidden";
+		  visibilityChange = "mozvisibilitychange";
+		} else if (typeof document.msHidden !== "undefined") {
+		  hidden = "msHidden";
+		  visibilityChange = "msvisibilitychange";
+		} else if (typeof document.webkitHidden !== "undefined") {
+		  hidden = "webkitHidden";
+		  visibilityChange = "webkitvisibilitychange";
+		}
+		document.addEventListener(visibilityChange, onVisibilityChange, false);
+	}
+
+	function onVisibilityChange(){
+		if (!document[hidden]) {
+			unreadMsgCount = 0;
+			document.title = title;
+		}
+	}
+
+	function notifyAboutUnread(eventArgs) {
+		if (document[hidden]) {
+			unreadMsgCount += 1;
+			document.title = '(' + unreadMsgCount + ') ' + title;
+		}
+	}
+
+	function getParameterByName(name) {
+	  name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+	  var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+	  results = regex.exec(location.search);
+	  return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+	}
+    </script>
+
+<div id="secureIcon" style="display:none;"><img src="data:image/gif;base64,R0lGODlhIAAgAOZ/ANDt//+/ALKEMLiKM+X1/6anqOC9atXv/3WVvJVlPbLL483s/5lxUMfIx//EEpdoMN/z///GGoxbMfLy8oyXqur3/4Wjxu74/5q52eLWzMKniMKMG//MNNnw/7m3tf/ABMSVM8KXQ/e+Ga3J45eXl//UVJirx//IJqZzJfL6/7ORZsCql+z4///efdLIvrqhi//BCKmDY//CDP/cc7ucfUlnlf/AAv/aavT7///XYP/nov/RSI2szsKfYqyKZcKQKeDDgqnH46OBYrjN49mfEPe5BJaqx9GZE7uGH+i6Q7KAIpCtznd/jef2/+j2/+L0/+Hz/9zy/9vx/8GsmOjg2G15jdHBsvDq5djLv7qbcPDfuPj4+MKgasy+saS71erv8qx8LsmSFrOQYK+OcrSnmf/fgP/zz3yCjNm4c+CmDdTU1JFgL//KLJeEe8vU2MKdXK+afJ9vLoKGjKuMX//ghbqQRKfH48mtl9Le5aN6V7aXfff18v/HIPf8///OPf///yH5BAEAAH8ALAAAAAAgACAAAAf/gH+Cg3tYU1NWV4OLjI2Ney9ZQC05SSAqGY6ajVRCWjqUOxwnIkpje5ube0JmoDmiJxEOMkp5qZovn5Qhaz4gIjIwH3FtJsbHx0bKFhQNf3tZriEJmVQDwh9ECRN9ODgpKRfiFRVOTV5Mf1iTr3Eagy8fHwEBElje4OIX5OYEQ+lTQnF4cAfePHoopnwLN65cEwL+AL4a9SOGIGv0EC5JseRCxyUVljRZQuDJvz9WkoyStUEMjR9FMgZYs/FjSCcklzyBcvIKiFizsMkMkEbCR48hRxJYAgWCgnR/fIgIKm9oABQMxLHg97BkU6dQrwwIVnXoEQkuLmx1CHEnBAhR/54OsjKgrMyzNpfgXPpkCYQlUaTIHURFzJGY9IigSNBlCQuQInNC8btESofBi6gwEIBkgwQ9X5Dqzdn3b5QlHTqMgMpIww4Z9aao5dr2a+DUB1Y70lACtoQVa/t5fXu7w4HcrBfxhr1mBbnISyf/lYJ6yXHdjV7kcHA1RjnSlE93sG4dQJDkg6bc4I4ihjnJlKmPP7AEgHn0gqbMcGCjfVe3cFlm3HH23efIFGVEYIMSMdRGnIDHLWHBhBggIIcjWBigoBISkAHHHA0AVh19B1hg3wJ21ECCIxkYwMcHIWxnAxFGyUceACYusAACZ6jBogEnfFDHDREgsYYQI95ogXGOCFThgSYZoBHkBjNEgMIaeOBGoH1LNllAKm+w8cEGLUTgmQduHHdAgQtYwEMVBWyRSg8cwLABHS8WIQEDE7oZRBAY1OCknKlwUWcYPYCBAgp7FuBoARQwwQQJztzyhwp+wEBjJpZ2StcGa9DQaSOBAAA7" width="32" height="32" title="This chat is using encryption"></div>	
+</body></html>
